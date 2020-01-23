@@ -140,9 +140,19 @@ systemctl daemon-reload; systemctl restart docker
 
 [source,bash]
 ----
-s2i build -e MAVEN_S2I_GOALS=install .  quay.io/wildfly/wildfly-centos7 demo-parent
-s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true client/ demo-parent demo-client-build
-s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true server/ demo-parent demo-server-build
+cd 03-ejb-txn-demo/
+# building the parent pom and changing mvn command from package to install
+# with install the built artifact will be part of the resulted local maven repository
+s2i build -e MAVEN_S2I_GOALS=install . quay.io/wildfly/wildfly-centos7 demo-parent
+
+# using pre-built image with updated local maven repository
+# pointint to 'extensions' directory where cli scripts resides
+s2i build \
+  -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
+  client/ demo-parent demo-client-build
+s2i build \
+  -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
+  server/ demo-parent demo-server-build
 ----
 
 With the build default servers, let's build the runtime servers
@@ -151,15 +161,34 @@ With the build default servers, let's build the runtime servers
 ----
 cd s2i-runtime-image
 # change Dockerfile `--from` to `demo-client-build`, enable JAVA_OPTS_APPEND
-docker build --squash -t demo-client-runtime .
+docker build --squash -t $(minikube ip):5000/demo/client .
+docker push $(minikube ip):5000/demo/client
 # change Dockerfile `--from` to `demo-server-build`, comment out JAVA_OPTS_APPEND
-docker build --squash -t demo-server-runtime .
+docker build --squash -t $(minikube ip):5000/demo/server .
+docker push $(minikube ip):5000/demo/server
 ----
 
 Now we can deploy
 
 [source,sh]
 ----
+kubectl create deployment client --image=localhost:5000/demo/client
+kubectl set env deployment/client STATEFULSET_HEADLESS_SERVICE_NAME=client
+kubectl expose deployment client --type=LoadBalancer --port=8080
+
+kubectl create deployment server --image=localhost:5000/demo/server
+kubectl set env deployment/server STATEFULSET_HEADLESS_SERVICE_NAME=server
+kubectl expose deployment server --type=LoadBalancer --port=8080
+kubectl scale deployment server --replicas=2
+----
+
+Now executing the endpoints
+
+[source,sh]
+----
+# check the external ip addresses for the cluster services
+kube get svc
+curl http://10.97.204.81:8080/client/stateless-tx | jq .
 ----
 
 For deploying this Quickstart to Kubernetes/Openshift container platform it is needed to realize some facts.

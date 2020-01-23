@@ -1,6 +1,7 @@
 embed-server --server-config=standalone.xml
 
 /system-property=remote.server.host:add(value=server-0.server-headless)
+# /system-property=remote.server.host:add(value=server)
 /system-property=remote.server.port:add(value=8080)
 /system-property=remote.server.username:add(value=ejb)
 /system-property=remote.server.password:add(value=ejb)

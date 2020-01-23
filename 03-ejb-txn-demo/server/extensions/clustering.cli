@@ -52,10 +52,9 @@ batch
 /subsystem=infinispan/cache-container=web/local-cache=passivation:remove
 run-batch
 
-echo "Configuring server socket binding with client-mappings..."
 # needed for ejb client works fine with multiple servers in ha cluster
 if (result == undefined) of /socket-binding-group=standard-sockets/socket-binding=http:read-attribute(name=client-mappings)
-  echo "GO"
+  echo "Configuring server socket binding with client-mappings..."
   /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
 end-if
 

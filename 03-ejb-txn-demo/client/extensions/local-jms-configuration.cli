@@ -1,5 +1,5 @@
 embed-server --server-config=standalone-full.xml
 
-/subsystem=messaging-activemq/server=default/jms-queue=MyQueue:add(entries=[java:jboss/exported/jms/queue/testQueue])
+/subsystem=messaging-activemq/server=default/jms-queue=testQueue:add(entries=[java:jboss/exported/jms/queue/testQueue])
 
 quit
