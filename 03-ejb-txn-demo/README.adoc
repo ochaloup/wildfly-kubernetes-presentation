@@ -53,15 +53,17 @@ Configure the client server with ejb security realm and remote outbound connecti
 
 [source,bash]
 ----
-# 1. change client/extensions/remote-configuration.cli to work with 'standalone-full.xml'
-# 2. go to the directory with distribution of wfly1
+# 1. go to the directory with distribution of wfly1
 cd wfly1
-./bin/jboss-cli.sh --file=client/extensions/remote-configuration.cli
+# 2. configure EJB remote endpoints
+./bin/jboss-cli.sh --file=03-ejb-txn-demo/client/extensions/local-ejb-configuration.cli
+# 3. configure JMS queue
+./bin/jboss-cli.sh --file=03-ejb-txn-demo/client/extensions/local-jms-configuration.cli
 ----
 
 Database is configured under `h2-ds.xml` descritor at `server`.
 
-Package and deploy to particular servers. Then run the servers.
+== Build, deploy and start WildFly
 
 [source,sh]
 ----
@@ -72,243 +74,45 @@ cp server/target/server.war wfly2/standalone/deployments
 cp server/target/server.war wfly3/standalone/deployments
 
 # start server (each one on its console)
-
+./bin/standalone.sh -c standalone-full.xml  -Djboss.tx.node.id=wfly1 -Djboss.node.name=wfly1
+./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly2 -Djboss.node.name=wfly2 -Djboss.socket.binding.port-offset=100
+./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly3 -Djboss.node.name=wfly3 -Djboss.socket.binding.port-offset=200
 ----
 
-
-=== Configure datasources
-
-As said for the transaction work could be done the quickstarts uses datasources.
-For that it's needed to have a database and configure the server to know how to connect to it.
-This quickstart works either with H2 embed database or PostgreSQL.
-
-==== Option 1: Running with embed H2 database
-
-The configuration of H2 is easy, well suited for local testing showcase
-but it skips the steps needed to be done for other databases
-and furthermore it's not suited for the OpenShift environment.
-
-For running the quickstart with H2 you need just rename the files
-`client/src/webapp/WEB-INF/h2-ds.xml.config` and
-`server/src/webapp/WEB-INF/h2-ds.xml.config` to `h2-ds.xml`
-and build this quickstart once again.
-
-==== Option 2: Running with PosgreSQL database
-
-First you need a database running. For local testing purposes
-could be used simple docker one-liner like:
+== Test the HTTP invocations
 
 [source,sh]
 ----
-docker run -p 5432:5432 --rm  -ePOSTGRES_DB=test -ePOSTGRES_USER=test -ePOSTGRES_PASSWORD=test postgres:9.4 -c max-prepared-transactions=110 -c log-statement=all
-----
+# transactional stateless
+curl -s localhost:8080/client/stateless-tx | jq .
+# non-transactional stateless
+curl -s localhost:8080/client/stateless-notx | jq .
+# non-transactional stateful
+curl -s localhost:8080/client/stateful-notx | jq .
 
-For configuration of the PosgreSQL in details follow the instruction at
-https://github.com/jboss-developer/jboss-developer-shared-resources/blob/master/guides/CONFIGURE_POSTGRESQL.md#download-and-install-postgresql[Configure the PostgreSQL Database for Use with the Quickstarts].
+# verify on server
+curl -s localhost:8180/server/users | jq '.[].id'
+curl -s localhost:8280/server/users | jq '.[].id'
+curl -s localhost:8180/server/commits
 
-Here we present only a quick summary of the steps:
+# crash
+curl -X DELETE localhost:8180/server/users && printf ':' && curl -X DELETE localhost:8280/server/users
+curl -s localhost:8080/client/fail
 
-. Download PostgreSQL JDBC driver (https://jdbc.postgresql.org)
-. Install the driver for each server
-+
-[source,bash]
-----
-./bin/jboss-cli.sh "embed-server,\
-  module add --name=org.postgresql.jdbc --resources=<path-to-jar>/postgresql.jar --dependencies=javax.api\,javax.transaction.api"
-----
-+
-. Configure jdbc driver for each server. For `server1` use the configuration `standalone.xml`,
-for the `server2` and `server2` use the configuration `standalone-ha.xml`.
-+
-[source,bash]
-----
-./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
-  /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
-----
-+
-. Configure xa-datasource for each server. For `server1` use the configuration `standalone.xml`,
-for the `server2` and `server3` use the configuration `standalone-ha.xml`
-+
-[source,bash]
-----
-./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
-  xa-data-source add --name=ejbJtaDs --driver-name=postgresql --jndi-name=java:jboss/datasources/ejbJtaDs --user-name=test --password=test --xa-datasource-properties=ServerName=localhost,\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=PortNumber:add(value=5432),\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=DatabaseName:add(value=test)"
-----
-
-== Start WildFly servers
-
-You need to have three servers running. The first one `server` is to be started
-with the `standalone.xml` configuration.
-The other ones (the `server2` and the `server3`) are to be started
-with the `standalone-ha.xml` configuration.
-
-If you are going to start the servers on the local machine you may consider
-to use port offset for each server binds to a different ports.
-Then it's highly recommended to define unique transaction node id
-and jboss node name for each server.
-
-[source,bash,subs="+quotes,attributes+",options="nowrap"]
-----
-cd $$JBOSS_HOME_1
-./bin/standalone.sh -c standalone.xml -Djboss.tx.node.id=server1 -Djboss.node.name=server1
-
-cd $$JBOSS_HOME_2
-./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=server2 -Djboss.node.name=server2 -Djboss.socket.binding.port-offset=100
-
-cd $$JBOSS_HOME_3
-./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=server3 -Djboss.node.name=server3 -Djboss.socket.binding.port-offset=200
-----
-
-
-== Examinning the Demo
-
-When the WildFly servers are configured, started and the quickstart artifacts are deployed
-you may examine the particular method invocations and their results.
-
-The `client.jar` deployed to `server1` exposes several endpoints which invokes
-EJB remote invocations to the cluster of `server2` and `server3`.
-The following table defines the available endpoints and the expected behaviour when they are invoked.
-
-The REST invocations return the host names of the contacted servers (if not said otherwise).
-
-[NOTE]
-====
-The endpoints returns data in JSON format. If you use `curl` for invocation
-the result could be formated with `jq` command. For example:
-`curl http://localhost:8080/client/remote-outbound-stateless | jq .`
-====
-
-[options="headers"]
-|===
-|URL |Behaviour |Expectation
-
-|__http://localhost:8080/client/remote-outbound-stateless__
-|Two invocations under transaction context stared at the `server1` (caller) side.
-Both calls are directed to the same stateless bean on the remote server because of transaction affinity.
-The EJB remote call is constructed from the configuration of `remote-outboud-connection`.
-|The returned hostnames have to be the same.
-
-|__http://localhost:8080/client/remote-outbound-notx-stateless__
-|Seven remote invocations of one stateless bean without a transaction context.
-The EJB client is expected to load balance the calls on various servers.
-The EJB remote call is constructed from the configuration of `remote-outboud-connection`.
-|The list of the returned hostnames should contain occurence of the `server2`
-and `server3` at the same time.
-
-|__http://localhost:8080/client/direct-stateless__
-|Two invocations under transaction context stared at the `server1` (caller) side.
-The stateless bean is invoked at the remote side.
-The EJB remote call is constructed from the information defined directly
-in the application source code.
-|The returned hostnames have to be the same.
-
-|__http://localhost:8080/client/remote-outbound-notx-stateful__
-|Two invocations under transaction context stared at the `server1` (caller) side.
-Both calls are directed to the same stateful bean on the remote server because
-the stateful bean invocations are sticky by default.
-The EJB remote call is constructed from the configuration of `remote-outboud-connection`.
-|The returned hostnames have to be the same.
-
-|__http://localhost:8080/client/remote-outbound-fail-stateless__
-|An invocation under transaction context stared at the `server1` (caller) side.
-The call goes to one of the remote servers where error happens during transaction processing.
-But the failure happens when two-phase commit decided about commit the work.
-The observer can see no error &ndash; the remote call finishes with success.
-Later it's responsibility of the recovery manager to finish the work.
-|When the recovery manager finishes the work all the transaction resources are committed.
-
-|===
-
-=== Remote call failure ivocation
-
-Let's put some more details for the failure case, when __http://localhost:8080/client/remote-outbound-fail-stateless__
-is invoked.
-
-As stated above the ivocation fails. This failure simulates a intermittent network error
-at time the transaction two-phase commit protocol
-already decided that the work has to be committed. The observer is not informed
-about the intermittent failure as it's responsibility of recovery manager to finish
-all the work.
-
-The work, which has to be finished by recovery, is consisted of committing two XAResources
-which were part of the business method at the caller side of artifact `server.war`.
-First is data insertion to a database. Second is a testing XAResource which does
-no real work but it's capable to inform us if it was committed.
-You can ask the server about the number succesful of commits of the testing XAResource
-by invoking REST endpoint `http://localhost:8180/server/commits`.
-
-The http://jbossts.blogspot.com/2018/01/narayana-periodic-recovery-of-xa.html[recovery manager]
-normally executes the recovery processing in periodically every 2 minutes.
-When the recovery process is started the resources at the remote server (on the callee side)
-are committed.
-
-You may speed up the process and invoke the recovery process manually by accessing
-the port where recovery manager listener listens at. The recovery listener was enabled
-for this purpose by cli command, see `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli`.
-For starting the recovery processing send `SCAN` command to socket at `localhost:4712`.
-
-[source]
-----
+# after invocation restart the crashed server (either wfly2 or wfly3)
+# check number of users
+curl -s localhost:8180/server/users
+# force recovery to happen now
 telnet localhost 4712
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-SCAN
-DONE
-Connection closed by foreign host.
+>> SCAN
 ----
 
-Steps for observe the processing
+== Build for Kubernetes
 
-. Invoke the endpoint
-+
-[source,options="nowrap"]
-----
-curl http://localhost:8080/client/remote-outbound-fail-stateless
-----
-+
-. Check the server logs
-.. The `server1` will contain error
-+
-[source,options="nowrap"]
-----
-ARJUNA016036: commit on < formatId=131077, gtrid_length=35, bqual_length=36, tx_uid=..., node_name=server1, branch_uid=..., subordinatenodename=null, eis_name=unknown eis name > (Subordinate XAResource at remote+http://localhost:8180) failed with exception $XAException.XA_RETRY: javax.transaction.xa.XAException: WFTXN0029: The peer threw an XA exception
-----
-+
-. The `server2` or `server3` will contain error
-+
-[source,options="nowrap"]
-----
-ARJUNA016036: commit on < formatId=131077, gtrid_length=35, bqual_length=43, tx_uid=..., node_name=server1, branch_uid=..., subordinatenodename=server2, eis_name=unknown eis name > (org.jboss.as.quickstarts.ejb.mock.MockXAResource@731ae22) failed with exception $XAException.XAER_RMFAIL: javax.transaction.xa.XAException
-----
-+
-. Verify number of commits done for the test XAResource at the server side
-+
-[source,options="nowrap"]
-----
-curl http://localhost:8180/server/commits
-curl http://localhost:8280/server/commits
-----
-+
-. Start recovery processing by entering `SCAN` string with command `telnet localhost 4712` at terminal
-.. When the recovery is processed the server log at `server2` or `server3` should contain warning
-+
-[source,options="nowrap"]
-----
-WARN  [com.arjuna.ats.jta] (Periodic Recovery) ARJUNA016114: Could not load org.jboss.as.quickstarts.ejb.mock.MockXAResource will try to get XAResource from the recovery helpers
-----
-+
-. Verify the number of commits done for the test XAResource at the server side. The commit count should be increased by one.
-+
-[source,options="nowrap"]
-----
-curl http://localhost:8180/server/commits
-curl http://localhost:8280/server/commits
+[source,bash]
 ----
 
-== Kubernetes/OpenShift deployment
+----
 
 For deploying this Quickstart to Kubernetes/Openshift container platform it is needed to realize some facts.
 The application is deployed at the WildFly server which is running in a pod.

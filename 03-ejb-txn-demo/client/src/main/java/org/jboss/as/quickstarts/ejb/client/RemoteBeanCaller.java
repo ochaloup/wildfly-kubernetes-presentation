@@ -34,17 +34,16 @@ import java.util.List;
 
 /**
  * EJB which runs the remote calls to the EJBs.
- * We use the EJB here for benefit of automatic transaction management.
  */
 @Stateless
 public class RemoteBeanCaller {
     private static final Logger log = Logger.getLogger(RemoteBeanCaller.class);
 
     @Resource(mappedName = "java:/JmsXA")
-    ConnectionFactory connectionFactory;
+    private ConnectionFactory connectionFactory;
 
-    @Resource(mappedName = "java:jboss/exported/jms/queue/quequeB")
-    Queue queue;
+    @Resource(mappedName = "java:jboss/exported/jms/queue/testQueue")
+    private Queue queue;
 
     /**
      * Stateless no transaction.
@@ -55,8 +54,6 @@ public class RemoteBeanCaller {
 
         RemoteBeanInterface bean = RemoteLookupHelper.lookupRemoteEJBOutbound("StatelessBean", RemoteBeanInterface.class, false);
         return Arrays.asList(
-                bean.successOnCall(),
-                bean.successOnCall(),
                 bean.successOnCall(),
                 bean.successOnCall(),
                 bean.successOnCall(),
@@ -77,8 +74,11 @@ public class RemoteBeanCaller {
 
         RemoteBeanInterface bean = RemoteLookupHelper.lookupRemoteEJBOutbound("StatelessBean", RemoteBeanInterface.class, false);
         return Arrays.asList(
-            bean.successOnCall(),
-            bean.successOnCall()
+                bean.successOnCall(),
+                bean.successOnCall(),
+                bean.successOnCall(),
+                bean.successOnCall(),
+                bean.successOnCall()
         );
     }
 
@@ -92,6 +92,9 @@ public class RemoteBeanCaller {
 
         RemoteBeanInterface bean = RemoteLookupHelper.lookupRemoteEJBOutbound("StatefulBean", RemoteBeanInterface.class, true);
         return Arrays.asList(
+                bean.successOnCall(),
+                bean.successOnCall(),
+                bean.successOnCall(),
                 bean.successOnCall(),
                 bean.successOnCall()
         );

@@ -36,18 +36,8 @@ public class MockXAResource implements XAResource, Serializable {
     private static final long serialVersionUID = 1L;
     private static Logger log = Logger.getLogger(MockXAResource.class);
 
-    private static final Collection<Xid> preparedXids = ConcurrentHashMap.newKeySet();
+    static final Collection<Xid> preparedXids = ConcurrentHashMap.newKeySet();
     private static final AtomicInteger commitCount = new AtomicInteger();
-
-    /**
-     * This is a Narayana initialization of periodic recovery processing for the {@link MockXAResource}.
-     * The recovery helper ensures that the {@link XAResource} may be processed
-     * and ensures transactional safety when transaction processing failure happens.
-     */
-    static {
-        MockXAResource.MockXAResourceRecoveryHelper.getRecoveryModule()
-                .addXAResourceRecoveryHelper(MockXAResourceRecoveryHelper.INSTANCE);
-    }
 
     public enum TestAction {
         NONE,
@@ -88,6 +78,7 @@ public class MockXAResource implements XAResource, Serializable {
             case NONE:
             default:
                 preparedXids.add(xid);
+                MockXAResourceStorage.writeToDisk(preparedXids);
                 return XAResource.XA_OK;
         }
     }
@@ -112,10 +103,18 @@ public class MockXAResource implements XAResource, Serializable {
             case NONE:
             default:
                 preparedXids.remove(xid);
+                MockXAResourceStorage.writeToDisk(preparedXids);
         }
 
-        log.tracef("Number of succesful commit for MockXAResource is: %d",
+        log.tracef("Number of successful commit for MockXAResource is: %d",
                 commitCount.incrementAndGet());
+    }
+
+    @Override
+    public void rollback(Xid xid) throws XAException {
+        log.debugf("rollback '%s' xid: [%s]", this, xid);
+        preparedXids.remove(xid);
+        MockXAResourceStorage.writeToDisk(preparedXids);
     }
 
     @Override
@@ -154,12 +153,6 @@ public class MockXAResource implements XAResource, Serializable {
     }
 
     @Override
-    public void rollback(Xid xid) throws XAException {
-        log.debugf("rollback '%s' xid: [%s]", this, xid);
-        preparedXids.remove(xid);
-    }
-
-    @Override
     public boolean setTransactionTimeout(int seconds) throws XAException {
         log.tracef("setTransactionTimeout: setting timeout: %s", seconds);
         this.transactionTimeout = seconds;
@@ -173,44 +166,5 @@ public class MockXAResource implements XAResource, Serializable {
      */
     public static int getCommitCount() {
         return MockXAResource.commitCount.get();
-    }
-
-    /**
-     * Instance of {@link XAResourceRecoveryHelper} which gives a chance to the Narayana recovery manager
-     * to load the {@link MockXAResource} during recovery.
-     *
-     * A note: for this would work fine after deployment to WildFly we need to define
-     * dependency of jboss transaction module 'org.jboss.jts' for this war module.
-     * This is done by descriptor jboss-deployment-structure.xml.
-     */
-    static class MockXAResourceRecoveryHelper implements XAResourceRecoveryHelper {
-        static final MockXAResourceRecoveryHelper INSTANCE = new MockXAResourceRecoveryHelper();
-        private static final MockXAResource mockXARecoveringInstance = new MockXAResource();
-
-        private MockXAResourceRecoveryHelper() {
-            if(INSTANCE != null) {
-                throw new IllegalStateException("singleton instance can't be instantiated twice");
-            }
-        }
-
-        @Override
-        public boolean initialise(String p) throws Exception {
-            // this is never called during standard processing
-            return true;
-        }
-
-        @Override
-        public XAResource[] getXAResources() throws Exception {
-            return new XAResource[] { mockXARecoveringInstance };
-        }
-
-        static XARecoveryModule getRecoveryModule() {
-            for (RecoveryModule recoveryModule : ((Vector<RecoveryModule>) RecoveryManager.manager().getModules())) {
-                if (recoveryModule instanceof XARecoveryModule) {
-                    return (XARecoveryModule) recoveryModule;
-                }
-            }
-            return null;
-        }
     }
 }

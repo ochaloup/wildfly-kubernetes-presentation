@@ -42,6 +42,10 @@ public class UsersManagement {
                 "SELECT u FROM " + CalleeUser.class.getSimpleName() + " u").getResultList();
     }
 
+    public int deleteUsers() {
+        return em.createQuery("DELETE FROM " + CalleeUser.class.getSimpleName()).executeUpdate();
+    }
+
     public String printUsers() {
         StringBuffer sb = new StringBuffer();
         sb.append(String.format(tableFormatStringForPrint, "ID", "First Name", "Last Name"));

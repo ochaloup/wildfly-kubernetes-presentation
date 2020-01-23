@@ -21,6 +21,7 @@ import org.jboss.as.quickstarts.ejb.entity.CalleeUser;
 import org.jboss.as.quickstarts.ejb.mock.MockXAResource;
 
 import javax.ejb.EJB;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -48,5 +49,12 @@ public class RestEndpoints {
     @Produces(MediaType.APPLICATION_JSON)
     public List<CalleeUser> listUsers() {
         return usersMgmt.getUsers();
+    }
+
+    @DELETE
+    @Path("/users")
+    @Produces(MediaType.APPLICATION_JSON)
+    public int deleteUsers() {
+        return usersMgmt.deleteUsers();
     }
 }

@@ -83,7 +83,7 @@ public class StatelessBean implements RemoteBeanInterface {
 
         // transaction enlists XAResource #1 with forcing to fail
         try {
-            tm.getTransaction().enlistResource(new MockXAResource(MockXAResource.TestAction.COMMIT_THROW_XAER_RMFAIL));
+            tm.getTransaction().enlistResource(new MockXAResource(MockXAResource.TestAction.COMMIT_JVM_HALT));
         } catch(SystemException | RollbackException sre) {
             throw new RemoteException("Cannot enlist a " + MockXAResource.class.getName() + " to the current transaction", sre);
         }
