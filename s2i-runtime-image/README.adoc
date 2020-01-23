@@ -1,0 +1,7 @@
+= How to run
+
+[source]
+----
+docker build --squash -t quickstart-runtime-server .
+docker build --squash -t quickstart-runtime-server --build-arg deployment_image=quickstart-server .
+----

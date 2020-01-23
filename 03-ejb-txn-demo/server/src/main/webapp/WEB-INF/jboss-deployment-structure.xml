@@ -1,0 +1,7 @@
+<jboss-deployment-structure>
+    <deployment>
+        <dependencies>
+            <module name="org.jboss.jts" slot="main" export="true" meta-inf="export"/>
+        </dependencies>
+    </deployment>
+</jboss-deployment-structure>

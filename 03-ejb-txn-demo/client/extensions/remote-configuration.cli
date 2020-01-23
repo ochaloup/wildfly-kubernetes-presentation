@@ -1,0 +1,44 @@
+embed-server --server-config=standalone.xml
+
+/system-property=remote.server.host:add(value=server-0.server-headless)
+/system-property=remote.server.port:add(value=8180)
+/system-property=remote.server.username:add(value=ejb)
+/system-property=remote.server.password:add(value=ejb)
+
+echo "System properties defined"
+
+/socket-binding-group=standard-sockets/remote-destination-outbound-socket-binding=server2:add(host=${remote.server.host}, port=${remote.server.port})
+
+echo "Outbound socket binding 'server2' created"
+
+# adding password realm where secret is password 'ejb' converted to base64 format
+/core-service=management/security-realm=RemotePasswordRealm:add()
+/core-service=management/security-realm=RemotePasswordRealm/server-identity=secret:add(value="ZWpi")
+# reload # when would be run not in embed mode
+
+echo "Security realm 'RemotePasswordRealm' created"
+
+/subsystem=remoting/remote-outbound-connection=remote-ejb-connection:add(outbound-socket-binding-ref=server2, username=${remote.server.username}, security-realm=RemotePasswordRealm, protocol=remote+http)
+/subsystem=remoting/remote-outbound-connection=remote-ejb-connection/property=SASL_POLICY_NOANONYMOUS:add(value=false)
+/subsystem=remoting/remote-outbound-connection=remote-ejb-connection/property=SSL_ENABLED:add(value=false)
+/subsystem=remoting/remote-outbound-connection=remote-ejb-connection/property=SASL_DISALLOWED_MECHANISMS:add(value=JBOSS-LOCAL-USER)
+
+echo "Remote outbound connection 'remote-ejb-connection' created"
+
+# for transaction manager could be asked for recovery to be started the listener at port has to be enabled (JVM restart needed)
+/subsystem=transactions:write-attribute(name=recovery-listener,value=true)
+echo "Transaction recovery listener enabled"
+# the recovery listener is normally bound at port 4712, you can verify it with:
+# /socket-binding-group=standard-sockets/socket-binding=txn-recovery-environment:read-attribute(name=bound-port)
+# for recovery invocation you can use e.g. telnet: `telnet localhost 4712`, on input enter 'SCAN'
+
+# to get detailed insight on what happening during transaction processing switch on the TRACE logging for Narayana
+# /subsystem=logging/logger=com.arjuna:write-attribute(name=level,value=TRACE)
+
+echo "Configuring server socket binding with client-mappings..."
+# needed for ejb client works fine with multiple servers in ha cluster
+if (result == undefined) of /socket-binding-group=standard-sockets/socket-binding=http:read-attribute(name=client-mappings)
+  /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
+end-if
+
+quit

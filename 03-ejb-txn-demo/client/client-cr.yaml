@@ -1,0 +1,29 @@
+apiVersion: wildfly.org/v1alpha1
+kind: WildFlyServer
+metadata:
+  name: client
+spec:
+  applicationImage: "localhost:5000/wildfly-quickstarts/client:latest"
+  replicas: 1
+  env:
+    - name: POSTGRESQL_DATASOURCE
+      value: ejbJtaDs
+    - name: POSTGRESQL_SERVICE_HOST
+      value: postgresql
+    - name: POSTGRESQL_SERVICE_PORT
+      value: '5432'
+    - name: POSTGRESQL_DATABASE
+      valueFrom:
+        secretKeyRef:
+          name: postgresql
+          key: database-name
+    - name: POSTGRESQL_USER
+      valueFrom:
+        secretKeyRef:
+          name: postgresql
+          key: username
+    - name: POSTGRESQL_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgresql
+          key: password

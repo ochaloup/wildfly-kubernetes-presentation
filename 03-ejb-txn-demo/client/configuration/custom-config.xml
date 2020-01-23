@@ -1,0 +1,22 @@
+<configuration>
+    <authentication-client xmlns="urn:elytron:1.0">
+	<authentication-rules>
+            <rule use-configuration="jta">
+                <match-abstract-type name="jta" authority="jboss"/>
+	    </rule>
+        </authentication-rules>
+        <authentication-configurations>
+	     <configuration name="jta">
+                 <sasl-mechanism-selector selector="DIGEST-MD5"/>
+                 <providers>
+                     <use-service-loader />
+	         </providers>
+		 <set-user-name name="ejb"/>
+	         <credentials>
+                      <clear-password password="ejb"/>
+	         </credentials>
+                 <set-mechanism-realm name="ApplicationRealm" />
+             </configuration>
+        </authentication-configurations>
+    </authentication-client>
+</configuration>

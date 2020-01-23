@@ -1,0 +1,25 @@
+= Simple use of Galleon cli
+
+See https://wildfly.org/news/2019/03/01/Galleon_Openshift/
+
+[code,bash]
+----
+galleon.sh install wildfly:current --layers=jaxrs,cdi --dir=/tmp/wildfly-server
+----
+
+Check how the WildFly server was installed
+
+[code,bash]
+----
+du -sh /tmp/wildfly-server/ 
+
+>> 62M     /tmp/wildfly-server/
+# WildFly 19.0.0.Beta1 is at 226M
+
+less /tmp/wildfly-server/standalone/configuration/standalone.xml
+
+find /tmp/wildfly-server/modules/ | wc -l
+
+>> 897
+# WildFly 19.0.0.Beta1 is at 2810
+---

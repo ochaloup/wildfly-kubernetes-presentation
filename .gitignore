@@ -1,0 +1,9 @@
+target/
+*.iml
+.project
+.classpath
+.settings
+
+# wildfly servers for testing
+wfly/
+repomvn-snapshot-wfly-quickstarts/

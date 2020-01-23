@@ -1,0 +1,61 @@
+= Example of s2i to build an WildFly application for Kubernetes
+
+== Part #1
+
+[code,bash]
+----
+s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e MAVEN_OPTS="-Dcom.redhat.xpaas.repo.jbossorg" \
+  --context-dir helloworld --ref 18.0.0.Final \
+  https://github.com/wildfly/quickstart  quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7
+----
+
+The result is a fat image with repositories which are not necessary for runtime.
+It's time to use a chain build over runtime image.
+
+[NOTE]
+====
+Information about the chain builds can be found at
+
+
+If you run with OpenShift the `Template` providing the `ImageStream`s can be handy
+https://github.com/wildfly/wildfly-s2i/blob/master/templates/wildfly-s2i-chained-build-template.yml
+
+====
+
+[code,bash]
+----
+docker build --squash -t helloworld-wildfly-runtime-centos7 .
+----
+
+Check the result images which is still s2i build
+(meaning the s2i scripts will be executed on image startup)
+
+[code,bash]
+----
+docker images | grep helloworld-wildfly
+
+>> helloworld-wildfly-centos7            latest   b492a5a8247e  About a minute ago   1.27GB
+>> helloworld-wildfly-runtime-centos7    latest   92de64ecd2ce  3 hours ago          667MB
+>> helloworld-wildfly-runtime-centos7-2  latest   c3e8ee8019f5  8 minutes ago        505MB
+
+docker run -p 8080:8080 --rm helloworld-wildfly-runtime-centos7
+
+# check the application in the container
+curl localhost:8080/HelloWorld
+----
+
+== Part #2
+
+Utilize Galleon to define necessary layer and stripping the size of server down
+
+
+[code,bash]
+----
+s2i build \
+  -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true \
+  -e GALLEON_PROVISION_LAYERS=cdi,web-server \
+  --context-dir helloworld --ref 18.0.0.Final \
+  https://github.com/wildfly/quickstart quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7
+----
+
+and then continue on chain build
