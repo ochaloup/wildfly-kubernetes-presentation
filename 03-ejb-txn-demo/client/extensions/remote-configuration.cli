@@ -35,9 +35,9 @@ echo "Transaction recovery listener enabled"
 # to get detailed insight on what happening during transaction processing switch on the TRACE logging for Narayana
 # /subsystem=logging/logger=com.arjuna:write-attribute(name=level,value=TRACE)
 
-echo "Configuring server socket binding with client-mappings..."
 # needed for ejb client works fine with multiple servers in ha cluster
 if (result == undefined) of /socket-binding-group=standard-sockets/socket-binding=http:read-attribute(name=client-mappings)
+  echo "Configuring server socket binding with client-mappings..."
   /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
 end-if
 

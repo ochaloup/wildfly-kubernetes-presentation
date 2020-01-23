@@ -17,7 +17,7 @@
 
 package org.jboss.as.quickstarts.ejb.server;
 
-import org.jboss.as.quickstarts.ejb.entity.CallerUser;
+import org.jboss.as.quickstarts.ejb.entity.CalleeUser;
 import org.jboss.logging.Logger;
 
 import javax.ejb.Stateless;
@@ -37,16 +37,16 @@ public class UsersManagement {
     @PersistenceContext
     EntityManager em;
 
-    public List<CallerUser> getUsers() {
+    public List<CalleeUser> getUsers() {
         return em.createQuery(
-                "SELECT u FROM " + CallerUser.class.getSimpleName() + " u").getResultList();
+                "SELECT u FROM " + CalleeUser.class.getSimpleName() + " u").getResultList();
     }
 
     public String printUsers() {
         StringBuffer sb = new StringBuffer();
         sb.append(String.format(tableFormatStringForPrint, "ID", "First Name", "Last Name"));
         sb.append(String.format(tableFormatStringForPrint, "---", "---", "---"));
-        for(CallerUser user: getUsers()) {
+        for(CalleeUser user: getUsers()) {
             sb.append(String.format(tableFormatStringForPrint,
                     user.getId(), user.getFirstName(), user.getLastName()));
         }

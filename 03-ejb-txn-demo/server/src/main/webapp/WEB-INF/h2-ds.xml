@@ -24,7 +24,7 @@
              xsi:schemaLocation="http://www.jboss.org/ironjacamar/schema http://docs.jboss.org/ironjacamar/schema/datasources_1_0.xsd">
     <xa-datasource jndi-name="java:jboss/datasources/ejbJtaDs" pool-name="ejbJtaDs" enabled="true">
         <xa-datasource-property name="URL">
-            jdbc:h2:mem:ejb-jta-h2-ds;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
+            jdbc:h2:./standalone/data/ha.db:ejb-jta-h2-ds;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
         </xa-datasource-property>
         <driver>h2</driver>
         <xa-pool>

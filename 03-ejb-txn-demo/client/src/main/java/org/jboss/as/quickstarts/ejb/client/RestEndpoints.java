@@ -17,8 +17,6 @@
 
 package org.jboss.as.quickstarts.ejb.client;
 
-import org.jboss.as.quickstarts.ejb.entity.CallerUser;
-
 import javax.ejb.EJB;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -35,49 +33,31 @@ public class RestEndpoints {
     @EJB
     private RemoteBeanCaller remoteCaller;
 
-    @EJB
-    private UsersManagement usersMgmt;
-
     @GET
-    @Path("/remote-outbound-stateless")
+    @Path("/stateless-tx")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> toStatelessRemoteOutbound() throws Exception {
-        return remoteCaller.remoteOutboundStatelessBeanCall();
+        return remoteCaller.statelessBeanCall();
     }
 
     @GET
-    @Path("/remote-outbound-notx-stateless")
+    @Path("/stateless-notx")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> toStatelessRemoteOutboundNoTx() throws Exception {
-        return remoteCaller.remoteOutboundStatelessNoTxBeanCall();
+        return remoteCaller.statelessNoTxBeanCall();
     }
 
     @GET
-    @Path("/direct-stateless")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<String> toStatelessDirect() throws Exception {
-        return remoteCaller.directLookupStatelessBeanCall();
-    }
-
-    @GET
-    @Path("/remote-outbound-notx-stateful")
+    @Path("/stateful-notx")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> toStatefulRemoteOutboundNoTx() throws Exception {
-        return remoteCaller.remoteOutboundStatefulNoTxBeanCall();
+        return remoteCaller.statefulNoTxBeanCall();
     }
 
     @GET
-    @Path("/remote-outbound-fail-stateless")
+    @Path("/fail")
     @Produces(MediaType.APPLICATION_JSON)
     public String toFailStatelessRemoteOutbound() throws Exception {
-        return remoteCaller.remoteOutboundStatelessBeanFail();
-    }
-
-
-    @GET
-    @Path("/users")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<CallerUser> listUsers() {
-        return usersMgmt.getUsers();
+        return remoteCaller.fail();
     }
 }

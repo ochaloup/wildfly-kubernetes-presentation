@@ -39,7 +39,7 @@ cp -r wfly1/ wfly3/
 
 Configure the credentials for remote call authentication
 
-[source,sh,subs="+quotes,attributes+"]
+[source,bash]
 ----
 # go to the directory wfly2 and wfly3 and do the same
 cd wfly2
@@ -51,14 +51,29 @@ cd wfly2
 
 Configure the client server with ejb security realm and remote outbound connection
 
-[source,sh,subs="+quotes,attributes+"]
+[source,bash]
 ----
-# go to the directory with distribution of wfly1
+# 1. change client/extensions/remote-configuration.cli to work with 'standalone-full.xml'
+# 2. go to the directory with distribution of wfly1
 cd wfly1
 ./bin/jboss-cli.sh --file=client/extensions/remote-configuration.cli
 ----
 
 Database is configured under `h2-ds.xml` descritor at `server`.
+
+Package and deploy to particular servers. Then run the servers.
+
+[source,sh]
+----
+# package and deploy
+mvn clean package
+cp client/target/client.war wfly1/standalone/deployments
+cp server/target/server.war wfly2/standalone/deployments
+cp server/target/server.war wfly3/standalone/deployments
+
+# start server (each one on its console)
+
+----
 
 
 === Configure datasources

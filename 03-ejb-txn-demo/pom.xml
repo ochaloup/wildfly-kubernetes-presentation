@@ -27,6 +27,9 @@
     <description>The project demonstrates how to make EJB remote calls from server to server with transaction propagation.
                  The project also considers how to setup and run this functionality on OpenShift.</description>
     <properties>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+
         <version.narayana>5.10.0.Final</version.narayana>
         <version.cdi-api>2.0.2</version.cdi-api>
         <version.jaxrs.api>2.0.1.Final</version.jaxrs.api>
@@ -35,8 +38,10 @@
         <version.transaction.api>2.0.0.Final</version.transaction.api>
         <version.persistence.api>2.2.3</version.persistence.api>
         <version.jaxb.api>2.0.0.Final</version.jaxb.api>
-        <version.jboss.logging>1.0.0.Final</version.jboss.logging>
+        <version.jboss.logging>3.4.1.Final</version.jboss.logging>
         <version.war.plugin>3.2.2</version.war.plugin>
+        <version.jms.api>2.0.0.Final</version.jms.api>
+        <version.annotations.api>2.0.1.Final</version.annotations.api>
     </properties>
 
 
@@ -91,9 +96,19 @@
                 <version>${version.jboss.logging}</version>
             </dependency>
             <dependency>
+                <groupId>org.jboss.spec.javax.annotation</groupId>
+                <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+                <version>${version.annotations.api}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.narayana.jta</groupId>
                 <artifactId>jta</artifactId>
                 <version>${version.narayana}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.jms</groupId>
+                <artifactId>jboss-jms-api_2.0_spec</artifactId>
+                <version>${version.jms.api}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

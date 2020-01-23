@@ -17,12 +17,15 @@
 
 package org.jboss.as.quickstarts.ejb.server;
 
+import org.jboss.as.quickstarts.ejb.entity.CalleeUser;
 import org.jboss.as.quickstarts.ejb.mock.MockXAResource;
 
+import javax.ejb.EJB;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 /**
  * REST endpoints to get info on the server processing.
@@ -30,10 +33,20 @@ import javax.ws.rs.core.MediaType;
 @Path("/")
 public class RestEndpoints {
 
+    @EJB
+    private UsersManagement usersMgmt;
+
     @GET
     @Path("/commits")
     @Produces(MediaType.APPLICATION_JSON)
     public int numberOfMockXAResourceCommits() {
         return MockXAResource.getCommitCount();
+    }
+
+    @GET
+    @Path("/users")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<CalleeUser> listUsers() {
+        return usersMgmt.getUsers();
     }
 }
