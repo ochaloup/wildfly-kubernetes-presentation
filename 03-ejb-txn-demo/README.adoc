@@ -109,9 +109,57 @@ telnet localhost 4712
 
 == Build for Kubernetes
 
-[source,bash]
+[NOTE]
+====
+For `minikube` enable `registry` plugin and run `tunnel` for services to be exposed outside
+of the Kubernetes cluster.
+
+[source,sh]
+----
+minikube addons enable registry
+minikube tunnel
 ----
 
+To permit the localhost `docker` to push to the insecure minikube registry
+edit (or create) `/etc/docker/daemon.json` and add there ip address with port
+which you found when invoke `echo $(minikube ip):5000`.
+
+Similar to
+[code,yaml]
+----
+{
+  "insecure-registries": ["192.168.39.132:5000"]
+}
+----
+Restart docker
+[code,sh]
+----
+systemctl daemon-reload; systemctl restart docker
+----
+====
+
+[source,bash]
+----
+s2i build -e MAVEN_S2I_GOALS=install .  quay.io/wildfly/wildfly-centos7 demo-parent
+s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true client/ demo-parent demo-client-build
+s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true server/ demo-parent demo-server-build
+----
+
+With the build default servers, let's build the runtime servers
+
+[source,sh]
+----
+cd s2i-runtime-image
+# change Dockerfile `--from` to `demo-client-build`, enable JAVA_OPTS_APPEND
+docker build --squash -t demo-client-runtime .
+# change Dockerfile `--from` to `demo-server-build`, comment out JAVA_OPTS_APPEND
+docker build --squash -t demo-server-runtime .
+----
+
+Now we can deploy
+
+[source,sh]
+----
 ----
 
 For deploying this Quickstart to Kubernetes/Openshift container platform it is needed to realize some facts.

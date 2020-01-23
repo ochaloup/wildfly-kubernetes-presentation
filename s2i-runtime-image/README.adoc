@@ -1,7 +1,9 @@
 = How to run
 
+Change the `--copy-from` to `demo-client-build` or to `demo-server-build`
+
 [source]
 ----
-docker build --squash -t quickstart-runtime-server .
-docker build --squash -t quickstart-runtime-server --build-arg deployment_image=quickstart-server .
+docker build --squash -t demo-client-runtime .
+docker build --squash -t demo-server-runtime .
 ----
