@@ -173,12 +173,35 @@ Now we can deploy
 [source,sh]
 ----
 kubectl create deployment client --image=localhost:5000/demo/client
-kubectl set env deployment/client STATEFULSET_HEADLESS_SERVICE_NAME=client
+# kubectl set env deployment/client STATEFULSET_HEADLESS_SERVICE_NAME=client
 kubectl expose deployment client --type=LoadBalancer --port=8080
 
 kubectl create deployment server --image=localhost:5000/demo/server
-kubectl set env deployment/server STATEFULSET_HEADLESS_SERVICE_NAME=server
+# kubectl set env deployment/server STATEFULSET_HEADLESS_SERVICE_NAME=server
 kubectl expose deployment server --type=LoadBalancer --port=8080
+----
+
+Now we want to scale up the server pods where we need to tune a bit the Kubernetes config
+
+[source,sh]
+----
+# for clustering would work there is used KUBE_PING protocol currently
+# the pod has to have rights to list all available pods under namespace. One way is to add 'view'
+# role to the default service account
+cat << EOF | kubectl create -f -
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: view
+subjects:
+- kind: ServiceAccount
+  name: default
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
 kubectl scale deployment server --replicas=2
 ----
 
@@ -191,17 +214,13 @@ kube get svc
 curl http://10.97.204.81:8080/client/stateless-tx | jq .
 ----
 
-For deploying this Quickstart to Kubernetes/Openshift container platform it is needed to realize some facts.
-The application is deployed at the WildFly server which is running in a pod.
-The pod is an ephemeral object that could be rescheduled, restarted or moved to a different machine by the platform.
-This is favourable neither for transaction manager which requires a log to be saved per WildFly server instance
-nor for EJB remoting which requires a stable remote endpoint to ensure the state and transaction affinity,
-and which is used during EJB remote transaction recovery calls.
-For this to work the platform has to offer some guarantees which are granted
-by StatefulSet object in case of the Kubernetes/OpenShift.
-The WildFly Operator uses the StatefulSet as the object to manage the WildFly with.
+Troubles of `Deployment`
 
-The WildFly Operator is the recommended way to manage the WildFly instances on Kubernetes/OpenShift.
+* it does not preserve hostname which is problematic for recovery calls going to finish the transaction
+* it does not preserve the persistence storage per pod where data folder is needed for storing transactional data
+** it could be walked around with shared peristent storage mounted to all `Deployment`s of the one type
+
+Here the WildFly Operator gives the helping hand
 
 === Running on Kubernetes
 
