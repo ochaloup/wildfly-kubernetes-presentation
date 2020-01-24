@@ -146,7 +146,7 @@ cd 03-ejb-txn-demo/
 s2i build -e MAVEN_S2I_GOALS=install . quay.io/wildfly/wildfly-centos7 demo-parent
 
 # using pre-built image with updated local maven repository
-# pointint to 'extensions' directory where cli scripts resides
+# pointing to 'extensions' directory where cli scripts resides
 s2i build \
   -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
   client/ demo-parent demo-client-build
