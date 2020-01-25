@@ -117,6 +117,7 @@ of the Kubernetes cluster.
 [source,sh]
 ----
 minikube addons enable registry
+# or eval docker environment to the shell directly: eval $(minikube docker-env)
 minikube tunnel
 ----
 
@@ -141,6 +142,9 @@ systemctl daemon-reload; systemctl restart docker
 [source,bash]
 ----
 cd 03-ejb-txn-demo/
+# build the project
+mvn clean install
+
 # building the parent pom and changing mvn command from package to install
 # with install the built artifact will be part of the resulted local maven repository
 s2i build -e MAVEN_S2I_GOALS=install . quay.io/wildfly/wildfly-centos7 demo-parent
@@ -149,10 +153,10 @@ s2i build -e MAVEN_S2I_GOALS=install . quay.io/wildfly/wildfly-centos7 demo-pare
 # pointing to 'extensions' directory where cli scripts resides
 s2i build \
   -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
-  client/ demo-parent demo-client-build
+  client/ demo-parent demo-client-deployment-build
 s2i build \
   -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
-  server/ demo-parent demo-server-build
+  server/ demo-parent demo-server-deployment-build
 ----
 
 With the build default servers, let's build the runtime servers
@@ -160,23 +164,23 @@ With the build default servers, let's build the runtime servers
 [source,sh]
 ----
 cd s2i-runtime-image
-# change Dockerfile `--from` to `demo-client-build`, enable JAVA_OPTS_APPEND
-docker build --squash -t $(minikube ip):5000/demo/client .
-docker push $(minikube ip):5000/demo/client
-# change Dockerfile `--from` to `demo-server-build`, comment out JAVA_OPTS_APPEND
-docker build --squash -t $(minikube ip):5000/demo/server .
-docker push $(minikube ip):5000/demo/server
+# change Dockerfile `--from` to `demo-client-deployment-build`, enable JAVA_OPTS_APPEND
+docker build --squash -t $(minikube ip):5000/demo/client-deployment .
+docker push $(minikube ip):5000/demo/client-deployment
+# change Dockerfile `--from` to `demo-server-deployment-build`, comment out JAVA_OPTS_APPEND
+docker build --squash -t $(minikube ip):5000/demo/server-deployment .
+docker push $(minikube ip):5000/demo/server-deployment
 ----
 
 Now we can deploy
 
 [source,sh]
 ----
-kubectl create deployment client --image=localhost:5000/demo/client
+kubectl create deployment client --image=localhost:5000/demo/client-deployment
 # kubectl set env deployment/client STATEFULSET_HEADLESS_SERVICE_NAME=client
 kubectl expose deployment client --type=LoadBalancer --port=8080
 
-kubectl create deployment server --image=localhost:5000/demo/server
+kubectl create deployment server --image=localhost:5000/demo/server-deployment
 # kubectl set env deployment/server STATEFULSET_HEADLESS_SERVICE_NAME=server
 kubectl expose deployment server --type=LoadBalancer --port=8080
 ----
@@ -214,6 +218,12 @@ kube get svc
 curl http://10.97.204.81:8080/client/stateless-tx | jq .
 ----
 
+=== Issues
+
+Bad practices in general for cloud
+
+* data component should be separated from the business logic
+
 Troubles of `Deployment`
 
 * it does not preserve hostname which is problematic for recovery calls going to finish the transaction
@@ -222,33 +232,71 @@ Troubles of `Deployment`
 
 Here the WildFly Operator gives the helping hand
 
-=== Running on Kubernetes
-
-For running the application on Kubernetes you need first to build a docker image that may be deployed.
-The deployment process is managed by WildFly Operator. When Operator is correctly setup
-then it pulls the docker image from a docker registry and starts the application server with the deployment.
-
-==== Running on Kubernetes: build a docker image
+=== Fixing the issues of the "naive" transfer to Kubernetes
 
 [NOTE]
 ====
-The base image to build the application for WildFly is `quay.io/repository/wildfly/wildfly-centos7`
+Delete what was deployed previously
+[source]
+----
+kube delete deployment service --all
+----
+
 ====
 
-The whole concept of the WildFly image builds are based on the https://github.com/openshift/source-to-image[s2i].
-The *s2i* tooling takes a docker image (_quay.io/repository/wildfly/wildfly-centos7_ in WildFly case).
-This image is enriched with a *s2i* logic which is invoked during build of provided source code.
+. Deployment PostgreSQL database on Kubernetes
++
+[source,bash]
+----
+kubectl create -f client/extensions/postgresql.deployment.yaml
+----
 
-The *s2i* logic is useful for deployment build for additional steps like configuring the application server.
-Check the directories `client/extensions` and `server/extensions` where shell scripts executes the CLI commands to be executed.
-The WildFly s2i does not know about the `extensions` directory but it knows how to work with
-shell scripts named as `install.sh` and `postconfigure.sh`. On s2i build we need to inform about existence
-of the directory with environmental variable `S2I_IMAGE_SOURCE_MOUNTS`.
+. Deploy Artemis MQ on Kubernetes (???)
++
+[source,bash]
+----
+# define role and account
+kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/service_account.yaml
+kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/role.yaml
+kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/role_binding.yaml
 
-Then there are directores `client/configuration` and `server/configuration`. The content of those
-directories will be copied to the result image to directory `$JBOSS_HOME/standalone/configuraiton`.
+# define CRDs
+kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemisscaledown_crd.yaml
+kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemisaddress_crd.yaml
+kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemis_crd.yaml
 
-In short the WildFly CLI scripts and other setup provides
+# create the operator deployment
+kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/operator.yaml
+
+# upload the application definition as CustomerResource
+
+----
+
+Now we deploy with WildFly Operator
+
+Do changes in source code
+
+* rename `server/main/webapp/WEB-INF/h2-ds.xml` to `server/main/webapp/WEB-INF/h2-ds.xml.temp`
+* check `client/extensions` files `postconfigure.sh` and `kubernetes-jms-configuration.cli` (to point with headless service)
+
+[source,sh]
+----
+# build the image with galleon layers
+s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
+  client/ demo-parent demo-client-build
+s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
+  server/ demo-parent demo-server-build
+# build the runtime image
+cd s2i-runtime-image
+# change Dockerfile `--from` to `demo-client-build`, enable JAVA_OPTS_APPEND
+docker build --squash -t $(minikube ip):5000/demo/client .
+docker push $(minikube ip):5000/demo/client
+# change Dockerfile `--from` to `demo-server-build`, comment out JAVA_OPTS_APPEND
+docker build --squash -t $(minikube ip):5000/demo/server .
+docker push $(minikube ip):5000/demo/server
+----
+
+Now we have the images prepared. The images configured following
 
 * `client/configuration`
 ** xml descriptor of `wildlfly-config-url` property
@@ -263,76 +311,42 @@ In short the WildFly CLI scripts and other setup provides
 ** reconfiguration of Infinispan caches for being distributed
 ** http socket client mapping for EJB remoting works
 
+Now we need to prepare for WildFly Operator. See
+https://github.com/wildfly/wildfly-operator/blob/master/build/run-minikube.sh
 
-The client deployment then needs the `JAVA_OPTS` properties to be adjusted
-with `wildlfly-config-url` command line argument which points to the XML descriptor.
+[NOTE]
+====
+More user friendly way how to install the WildFly Operator is via
+https://operatorhub.io
+which is easy to go with OpenShift.
+====
 
-* First install docker and https://github.com/openshift/source-to-image#installation[install the s2i].
-* Second build the quickstart images which will be placed in the docker local registry
-with names `wildfly-quickstarts/client` and `wildfly-quickstarts/server`.
-+
-[source,bash]
+[source,sh]
 ----
-s2i build --context-dir ejb-txn-remote-call/client \
-  -e MAVEN_OPTS="-Dcom.redhat.xpaas.repo.jbossorg" -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
-  -e JAVA_OPTS_APPEND='-Dwildfly.config.url=$JBOSS_HOME/standalone/configuration/custom-config.xml' \
-  https://github.com/wildfly/quickstart \
-  quay.io/repository/wildfly/wildfly-centos7 wildfly-quickstarts/client
+cd $GOPATH/src/github.com/wildfly/wildfly-operator/
+./src/github.com/wildfly/wildfly-operator/build/run-minikube.sh
+----
 
-s2i build --context-dir ejb-txn-remote-call/server \
-  -e MAVEN_OPTS="-Dcom.redhat.xpaas.repo.jbossorg" S2I_IMAGE_SOURCE_MOUNTS=extensions \
-  https://github.com/wildfly/quickstart \
-  quay.io/repository/wildfly/wildfly-centos7 wildfly-quickstarts/server
+Then create `CustomerResource`s of kind `WildFlyServer`.
+
+[source,sh]
+----
+cd 03-ejb-txn-demo
+mvn clean install
+kubectl create -f ./client/client-cr.yaml
+kubectl create -f ./server/server-cr.yaml
+----
+
+Now we can run
+
+[source,sh]
+----
+curl -s $(minikube service client-loadbalancer --url)/client/stateless-tx | jq .
+ url -s $(minikube service client-loadbalancer --url)/client/fail
 ----
 
 [NOTE]
 ====
-The WildFly *s2i* code, environmental properties and information about chain builds
-can be found at https://github.com/wildfly/wildfly-s2i.
+Way how to create own `xml` descriptor with config map
+https://github.com/wildfly/wildfly-operator/tree/master/examples/clustering
 ====
-
-The result images `wildfly-quickstarts/client` and `wildfly-quickstarts/server` have to be pushed
-to a docker registry. Then they may be used as images deployed to Kubernetes.
-
-==== Running on Kubernetes: deploy with WildFly Operator
-
-The WildFly Operator is deployed via Kubernetes `Deployment` object
-which listen to changes at other Kubernetes object of type `CustomerResource`.
-The WildFly Operator manages `CustomerResource` of kind `WildFlyServer`.
-
-The WildFly Operator can be found at https://quay.io[Quay.io]
-repository at https://quay.io/repository/wildfly/wildfly-operator
-with source code at https://github.com/wildfly/wildfly-operator.
-
-To start the `Deployment` has to be created on Kubernetes. The YAML definition can be found in
-https://github.com/wildfly/wildfly-operator/blob/master/deploy/operator.yaml[WildFly Operator Github repository].
-
-For deployment works right a https://github.com/wildfly/wildfly-operator/blob/master/deploy/service_account.yaml[service account],
-https://github.com/wildfly/wildfly-operator/blob/master/deploy/role.yaml[a role] and
-https://github.com/wildfly/wildfly-operator/blob/master/deploy/role_binding.yaml[a role binding] have to be created
-in the Kubernetes cluster.
-
-The follow-up step is creation of https://github.com/wildfly/wildfly-operator/blob/master/deploy/crds/wildfly_v1alpha1_wildflyserver_crd.yaml[`CustomResourceDefinition`]
-(abbreviated as *CRD*) which defines what capabilities provides the Operator and which things may be configured for the `WildFlyServer` `CustomerResource`.
-
-[NOTE]
-====
-If you clone the https://github.com/wildfly/wildfly-operator[WildFly Operator GitHub repository] to your
-local disk you may use the prepared script https://github.com/wildfly/wildfly-operator/blob/master/build/run-minikube.sh[build/run-minikube.sh]
-for that purpose.
-====
-
-The quickstart uses clustering.
-The WildFly clustering works with https://github.com/jgroups-extras/jgroups-kubernetes[jgroups `KUBE_PING`]
-protocol. This protocol requires having permission to list all available pods in scope of the `namespace`.
-The `default` `ServiceAccount` does not have such permissions.
-For development purposes it's possible to use
-https://github.com/wildfly/wildfly-operator/blob/master/examples/clustering/crds/role_binding.yaml[`RoleBinding` definition from WildFly Operator repository].
-The definition permits for the deployments to view details information about any Kubernetes object
-inside of the current `namespace`.
-
-When all this is setup and the WildFly Operator `Pod` is running we may prepare a definition
-of the `CustomerResource` which makes the application deployed.
-The `CustomerResource` definition points to the built images wildfly-quickstarts/client` and `wildfly-quickstarts/server`
-which has to be pushed at some docker registry.
-

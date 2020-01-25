@@ -5,26 +5,3 @@ A demo for presentation about WildFly on Kubernetes.
 * DevConf.cz 2020: https://www.devconf.info/cz/
 
 
-== Resouces
-
-Different resources to this topic. 
-
-* https://wildfly.org/news/2019/12/17/Ship-your-WildFly-additions-via-Galleon-feature-packs/
-* https://developers.redhat.com/blog/2019/11/06/managing-jboss-eap-wildfly-using-jcliff/
-* https://developers.redhat.com/blog/category/java/page/2/
-* https://wildfly.org/news/2019/03/01/Galleon_Openshift/
-* https://wildfly.org/news/2019/11/11/WildFly-s2i-openshift-Datasource-configuration/
-* https://developers.redhat.com/blog/2017/12/19/debug-java-openshift-vscode-cdk/
-* S2I data info: https://github.com/wildfly/wildfly-s2i 
-** S2I config variables: https://github.com/jboss-openshift/cct_module/tree/master/jboss/container/s2i/core/api
-** https://issues.redhat.com/browse/EAP7-892 (s2i scripts possibilities)
-* https://cookbook.openshift.org/building-and-deploying-from-source/how-can-i-build-from-local-source-instead-of-a-git-repository.html
-* https://github.com/Gepardec/openshift-builder-maven
-* https://docs.openshift.com/online/pro/using_images/s2i_images/java.html
-* https://github.com/fabric8io-images/s2i/tree/master/java/images/rhel
-
-* https://developers.redhat.com/blog/2019/02/21/podman-and-buildah-for-docker-users/ (Pod man, generating the kube yaml files)
-* https://developers.redhat.com/blog/2019/01/29/podman-kubernetes-yaml/ (Podman and kube)
-* https://buildah.io/blogs/2018/03/01/building-buildah-container-image-for-kubernetes.html (Using buildah to make Java images smaller)
-* ODO integration for WFLY?
-

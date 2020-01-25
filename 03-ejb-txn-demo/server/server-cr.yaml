@@ -3,7 +3,7 @@ kind: WildFlyServer
 metadata:
   name: server
 spec:
-  applicationImage: "localhost:5000/wildfly-quickstarts/server:latest"
+  applicationImage: "localhost:5000/demo/server"
   replicas: 2
   env:
     - name: POSTGRESQL_DATASOURCE
