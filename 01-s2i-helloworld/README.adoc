@@ -12,16 +12,6 @@ s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e MAVEN_OPTS="-Dcom.redh
 The result is a fat image with repositories which are not necessary for runtime.
 It's time to use a chain build over runtime image.
 
-[NOTE]
-====
-Information about the chain builds can be found at
-
-
-If you run with OpenShift the `Template` providing the `ImageStream`s can be handy
-https://github.com/wildfly/wildfly-s2i/blob/master/templates/wildfly-s2i-chained-build-template.yml
-
-====
-
 [code,bash]
 ----
 docker build --squash -t helloworld-wildfly-runtime-centos7 .
@@ -29,6 +19,15 @@ docker build --squash -t helloworld-wildfly-runtime-centos7 .
 
 Check the result images which is still s2i build
 (meaning the s2i scripts will be executed on image startup)
+
+[NOTE]
+====
+Information about the chain builds can be found at
+
+If you run with OpenShift the `Template` providing the `ImageStream`s can be handy
+https://github.com/wildfly/wildfly-s2i/blob/master/templates/wildfly-s2i-chained-build-template.yml
+
+====
 
 [code,bash]
 ----
