@@ -83,6 +83,12 @@
             <artifactId>jboss-jms-api_2.0_spec</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- health check directly here -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.health</groupId>
+            <artifactId>microprofile-health-api</artifactId>
+            <version>2.1</version>
+        </dependency>
     </dependencies>
 
     <build>
