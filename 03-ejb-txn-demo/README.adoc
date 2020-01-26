@@ -257,14 +257,6 @@ kubectl create -f client/extensions/postgresql.deployment.yaml
 
 Now we deploy with WildFly Operator
 
-First do few changes in source code which is needed as difference to `kubectl create deployment`. Do this:
-
-* rename `server/main/webapp/WEB-INF/h2-ds.xml` to `server/main/webapp/WEB-INF/h2-ds.xml.temp`
-* check `client/extensions` files `postconfigure.sh` and `kubernetes-jms-configuration.cli` (to point with headless service)
-
-or swicth to https://github.com/ochaloup/wildfly-kubernetes-presentation/tree/kubernetes/03-ejb-txn-demo#fixing-the-issues-of-the-naive-transfer-to-kubernetes[kubernetes branch of this repository].
-There should be the necessary changes done.
-
 [source,sh]
 ----
 cd 03-ejb-txn-demo

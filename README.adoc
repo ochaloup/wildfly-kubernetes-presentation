@@ -12,10 +12,9 @@ Plus there are slides at link:./slides[]
   and how to use chain build with with https://github.com/wildfly/wildfly-s2i/blob/master/README.md#chaining-s2i-build-with-runtime-image[wildfly-s2i] link:01-s2i-helloworld/Dockerfile[Dockerfile]
 * link:02-galleon-cli[] shows basic https://docs.wildfly.org/galleon/#_galleon_cli_tool[galleon.sh] command to create a WildFly distribution
 * link:03-ejb-txn-demo[] is a demo of simple Java EE application that is deployted at Kubernetes with https://github.com/wildfly/wildfly-operator[WildFly Operator]
-+
+
 [NOTE]
 ====
-For building the link:03-ejb-txn-demo[] with WildFly Operator use branch https://github.com/ochaloup/wildfly-kubernetes-presentation/tree/kubernetes[kubernetes]
-as it contains few changes in jboss cli scripts which are necessary for a clean run.
+This branch is meant to be used for deploying the link:03-ejb-txn-demo[] with WildFly Operator as it contains few changes in jboss cli scripts which are necessary for the clean run.
 ====
 
