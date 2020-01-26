@@ -215,7 +215,8 @@ Now executing the endpoints
 ----
 # check the external ip addresses for the cluster services
 kube get svc
-curl $(minikube service client --url)/client/stateless-tx | jq .
+curl -s $(minikube service client --url)/client/stateless-tx | jq .
+curl -s $(minikube service client --url)/client/fail
 ----
 
 === Issues
@@ -239,7 +240,8 @@ Here the WildFly Operator gives the helping hand
 Delete what was deployed previously
 [source]
 ----
-kube delete deployment service --all
+kube delete deployment --all
+kube delete service --all
 ----
 
 ====
@@ -250,27 +252,8 @@ kube delete deployment service --all
 ----
 kubectl create -f client/extensions/postgresql.deployment.yaml
 ----
-
 . Deploy Artemis MQ on Kubernetes (???)
-+
-[source,bash]
-----
-# define role and account
-kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/service_account.yaml
-kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/role.yaml
-kube create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/role_binding.yaml
 
-# define CRDs
-kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemisscaledown_crd.yaml
-kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemisaddress_crd.yaml
-kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/crds/broker_v2alpha1_activemqartemis_crd.yaml
-
-# create the operator deployment
-kubectl create -f https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/operator.yaml
-
-# upload the application definition as CustomerResource
-
-----
 
 Now we deploy with WildFly Operator
 
@@ -281,6 +264,8 @@ Do changes in source code
 
 [source,sh]
 ----
+cd 03-ejb-txn-demo
+git add . && git ci -m "kubernetes"; mvn clean install
 # build the image with galleon layers
 s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e S2I_IMAGE_SOURCE_MOUNTS=extensions \
   client/ demo-parent demo-client-build
@@ -323,8 +308,8 @@ which is easy to go with OpenShift.
 
 [source,sh]
 ----
-cd $GOPATH/src/github.com/wildfly/wildfly-operator/
-./src/github.com/wildfly/wildfly-operator/build/run-minikube.sh
+# cd $GOPATH/src/github.com/wildfly/wildfly-operator/
+$GOPATH/src/github.com/wildfly/wildfly-operator/build/run-minikube.sh
 ----
 
 Then create `CustomerResource`s of kind `WildFlyServer`.
@@ -342,11 +327,20 @@ Now we can run
 [source,sh]
 ----
 curl -s $(minikube service client-loadbalancer --url)/client/stateless-tx | jq .
- url -s $(minikube service client-loadbalancer --url)/client/fail
+curl -s $(minikube service client-loadbalancer --url)/client/fail
 ----
 
 [NOTE]
 ====
 Way how to create own `xml` descriptor with config map
 https://github.com/wildfly/wildfly-operator/tree/master/examples/clustering
+====
+
+[NOTE]
+====
+[source]
+----
+WARN  [org.jgroups.protocols.kubernetes.KUBE_PING] (thread-5,null,server-0) metadata.labels.pod-template-hash not found in pod json. Impossible to reliably determine pod group during Rolling Update
+----
+https://issues.redhat.com/browse/WFLY-12657
 ====
