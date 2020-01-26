@@ -31,7 +31,7 @@ We need 3 instances of WildFly. Tested with WildFly 19.0.0.Beta1.
 ----
 # dowload the zip distribution from http://wildfly.org
 # client server: client.war
-unzip ~/Downloads/wildfly-19.0.0.Beta1.zip; mv wildfly-19.0.0.Beta1/ wfly1
+unzip ~/Downloads/eap/wildfly-19.0.0.Beta1.zip; mv wildfly-19.0.0.Beta1/ wfly1
 # server server: server.war
 cp -r wfly1/ wfly2/
 cp -r wfly1/ wfly3/
@@ -56,9 +56,9 @@ Configure the client server with ejb security realm and remote outbound connecti
 # 1. go to the directory with distribution of wfly1
 cd wfly1
 # 2. configure EJB remote endpoints
-./bin/jboss-cli.sh --file=03-ejb-txn-demo/client/extensions/local-ejb-configuration.cli
+./bin/jboss-cli.sh --file=~/presentations/wildfly-kubernetes/03-ejb-txn-demo/client/extensions/local-ejb-configuration.cli
 # 3. configure JMS queue
-./bin/jboss-cli.sh --file=03-ejb-txn-demo/client/extensions/local-jms-configuration.cli
+./bin/jboss-cli.sh --file=~/presentations/wildfly-kubernetes/03-ejb-txn-demo/client/extensions/local-jms-configuration.cli
 ----
 
 Database is configured under `h2-ds.xml` descritor at `server`.
@@ -69,14 +69,14 @@ Database is configured under `h2-ds.xml` descritor at `server`.
 ----
 # package and deploy
 mvn clean package
-cp client/target/client.war wfly1/standalone/deployments
-cp server/target/server.war wfly2/standalone/deployments
-cp server/target/server.war wfly3/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/client/target/client.war wfly1/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war wfly2/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war wfly3/standalone/deployments
 
 # start server (each one on its console)
-./bin/standalone.sh -c standalone-full.xml  -Djboss.tx.node.id=wfly1 -Djboss.node.name=wfly1
-./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly2 -Djboss.node.name=wfly2 -Djboss.socket.binding.port-offset=100
-./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly3 -Djboss.node.name=wfly3 -Djboss.socket.binding.port-offset=200
+cd ~/tmp/wfly/wfly1 && ./bin/standalone.sh -c standalone-full.xml  -Djboss.tx.node.id=wfly1 -Djboss.node.name=wfly1
+cd ~/tmp/wfly/wfly2 && ./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly2 -Djboss.node.name=wfly2 -Djboss.socket.binding.port-offset=100
+cd ~/tmp/wfly/wfly3 && ./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=wfly3 -Djboss.node.name=wfly3 -Djboss.socket.binding.port-offset=200
 ----
 
 == Test the HTTP invocations
@@ -165,10 +165,10 @@ With the build default servers, let's build the runtime servers
 ----
 cd s2i-runtime-image
 # change Dockerfile `--from` to `demo-client-deployment-build`, enable JAVA_OPTS_APPEND
-docker build --squash -t $(minikube ip):5000/demo/client-deployment .
+docker build --squash -t $(minikube ip):5000/demo/client-deployment . && \
 docker push $(minikube ip):5000/demo/client-deployment
 # change Dockerfile `--from` to `demo-server-deployment-build`, comment out JAVA_OPTS_APPEND
-docker build --squash -t $(minikube ip):5000/demo/server-deployment .
+docker build --squash -t $(minikube ip):5000/demo/server-deployment . && \
 docker push $(minikube ip):5000/demo/server-deployment
 ----
 
@@ -183,6 +183,8 @@ kubectl expose deployment client --type=LoadBalancer --port=8080
 kubectl create deployment server --image=localhost:5000/demo/server-deployment
 # kubectl set env deployment/server STATEFULSET_HEADLESS_SERVICE_NAME=server
 kubectl expose deployment server --type=LoadBalancer --port=8080
+
+kubectl scale deployment server --replicas=2
 ----
 
 Now we want to scale up the server pods where we need to tune a bit the Kubernetes config
@@ -205,8 +207,6 @@ roleRef:
   name: view
   apiGroup: rbac.authorization.k8s.io
 EOF
-
-kubectl scale deployment server --replicas=2
 ----
 
 Now executing the endpoints
@@ -215,7 +215,7 @@ Now executing the endpoints
 ----
 # check the external ip addresses for the cluster services
 kube get svc
-curl http://10.97.204.81:8080/client/stateless-tx | jq .
+curl $(minikube service client --url)/client/stateless-tx | jq .
 ----
 
 === Issues

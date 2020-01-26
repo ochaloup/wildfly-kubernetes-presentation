@@ -1,7 +1,7 @@
 embed-server --server-config=standalone.xml
 
-/system-property=remote.server.host:add(value=server-0.server-headless)
-# /system-property=remote.server.host:add(value=server)
+# /system-property=remote.server.host:add(value=server-0.server-headless)
+/system-property=remote.server.host:add(value=server)
 /system-property=remote.server.port:add(value=8080)
 /system-property=remote.server.username:add(value=ejb)
 /system-property=remote.server.password:add(value=ejb)
@@ -39,8 +39,8 @@ echo "Transaction recovery listener enabled"
 # needed for ejb client works fine with multiple servers in ha cluster
 if (result == undefined) of /socket-binding-group=standard-sockets/socket-binding=http:read-attribute(name=client-mappings)
   echo "Configuring server socket binding with client-mappings..."
-  /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
-  # /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="server"})
+  # /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
+  /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="server"})
 end-if
 
 quit

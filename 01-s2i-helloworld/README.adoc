@@ -31,21 +31,31 @@ https://github.com/wildfly/wildfly-s2i/blob/master/templates/wildfly-s2i-chained
 
 [code,bash]
 ----
+# run the server
+docker  run -p 8080:8080 helloworld-wildfly-runtime-centos7:latest
+curl localhost:8080/HelloWorld
+----
+
+[code,bash]
+----
 docker images | grep helloworld-wildfly
 
->> helloworld-wildfly-centos7            latest   b492a5a8247e  About a minute ago   1.27GB
->> helloworld-wildfly-runtime-centos7    latest   92de64ecd2ce  3 hours ago          667MB
->> helloworld-wildfly-runtime-centos7-2  latest   c3e8ee8019f5  8 minutes ago        505MB
-
-docker run -p 8080:8080 --rm helloworld-wildfly-runtime-centos7
-
-# check the application in the container
-curl localhost:8080/HelloWorld
+>> helloworld-wildfly-centos7                  latest   b492a5a8247e  About a minute ago   1.27GB
+>> helloworld-wildfly-runtime-centos7          latest   92de64ecd2ce  3 hours ago          667MB
+>> helloworld-wildfly-centos7-galleon
+>> helloworld-wildfly-runtime-centos7-galleon  latest   c3e8ee8019f5  8 minutes ago        505MB
 ----
 
 == Part #2
 
 Utilize Galleon to define necessary layer and stripping the size of server down
+
+[code,bash]
+----
+galleon.sh install wildfly:current \
+  --layers=jaxrs,cdi \
+  --dir=my-wildfly-server
+----
 
 
 [code,bash]
@@ -54,7 +64,7 @@ s2i build \
   -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true \
   -e GALLEON_PROVISION_LAYERS=cdi,web-server \
   --context-dir helloworld --ref 18.0.0.Final \
-  https://github.com/wildfly/quickstart quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7
+  https://github.com/wildfly/quickstart quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7-galleon
 ----
 
 and then continue on chain build
