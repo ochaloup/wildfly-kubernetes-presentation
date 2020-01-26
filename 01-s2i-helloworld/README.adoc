@@ -65,6 +65,10 @@ s2i build \
   -e GALLEON_PROVISION_LAYERS=cdi,web-server \
   --context-dir helloworld --ref 18.0.0.Final \
   https://github.com/wildfly/quickstart quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7-galleon
+
+cd 01-s2i-helloworld
+# changing the Dockerfile
+docker build --squash -t helloworld-wildfly-runtime-centos7-galleon .
 ----
 
 and then continue on chain build

@@ -65,6 +65,7 @@ public class RemoteBeanCaller {
     /**
      * Stateless with transaction.
      */
+    @TransactionAttribute(value = TransactionAttributeType.REQUIRED)
     public List<String> statelessBeanCall() throws NamingException, RemoteException {
         log.debugf("Calling with transaction to StatelessBean.successOnCall()");
 

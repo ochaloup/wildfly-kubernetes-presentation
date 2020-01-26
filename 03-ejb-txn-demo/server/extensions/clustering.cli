@@ -55,7 +55,8 @@ run-batch
 # needed for ejb client works fine with multiple servers in ha cluster
 if (result == undefined) of /socket-binding-group=standard-sockets/socket-binding=http:read-attribute(name=client-mappings)
   echo "Configuring server socket binding with client-mappings..."
-  /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
+  # /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="${env.HOSTNAME}.${env.STATEFULSET_HEADLESS_SERVICE_NAME}"})
+  /socket-binding-group=standard-sockets/socket-binding=http:list-add(name=client-mappings, value={destination-address="server"})
 end-if
 
 echo "Clustering.cli script finished"

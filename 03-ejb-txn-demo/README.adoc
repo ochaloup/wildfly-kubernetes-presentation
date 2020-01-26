@@ -69,9 +69,9 @@ Database is configured under `h2-ds.xml` descritor at `server`.
 ----
 # package and deploy
 mvn clean package
-cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/client/target/client.war wfly1/standalone/deployments
-cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war wfly2/standalone/deployments
-cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war wfly3/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/client/target/client.war ~/tmp/wfly/wfly1/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war ~/tmp/wfly/wfly2/standalone/deployments
+cp ~/presentations/wildfly-kubernetes/03-ejb-txn-demo/server/target/server.war ~/tmp/wfly/wfly3/standalone/deployments
 
 # start server (each one on its console)
 cd ~/tmp/wfly/wfly1 && ./bin/standalone.sh -c standalone-full.xml  -Djboss.tx.node.id=wfly1 -Djboss.node.name=wfly1
