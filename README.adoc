@@ -1,10 +1,21 @@
 = WildFly on Kubernetes (DevConf 2020)
 
-A demo for presentation about WildFly on Kubernetes.
+This is a demo for presentation about WildFly on Kubernetes
+for DevConf.cz 2020: https://www.devconf.info/cz/
 
-* DevConf.cz 2020: https://www.devconf.info/cz/
+== Structure
 
-== WildFly Quickstart Helloworld
+This demo consists from three parts. Every part has it's own directory.
+Plus there are slides at link:./slides[]
 
-* `s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e MAVEN_OPTS="-Dcom.redhat.xpaas.repo.jbossorg" --context-dir helloworld --ref 18.0.0.Final https://github.com/wildfly/quickstart quay.io/wildfly/wildfly-centos7 helloworld-wildfly-centos7`
+* link:01-s2i-helloworld[] shows how to build a https://github.com/wildfly/quickstart/tree/master/helloworld[WildFly Quickstart Helloword] with https://github.com/wildfly/wildfly-s2i[s2i] command
+  and how to use chain build with with https://github.com/wildfly/wildfly-s2i/blob/master/README.md#chaining-s2i-build-with-runtime-image[wildfly-s2i] link:01-s2i-helloworld/Dockerfile[Dockerfile]
+* link:02-galleon-cli[] shows basic https://docs.wildfly.org/galleon/#_galleon_cli_tool[galleon.sh] command to create a WildFly distribution
+* link:03-ejb-txn-demo[] is a demo of simple Java EE application that is deployted at Kubernetes with https://github.com/wildfly/wildfly-operator[WildFly Operator]
++
+[NOTE]
+====
+For building the link:03-ejb-txn-demo[] with WildFly Operator use branch https://github.com/ochaloup/wildfly-kubernetes-presentation/tree/kubernetes[kubernetes]
+as it contains few changes in jboss cli scripts which are necessary for a clean run.
+====
 

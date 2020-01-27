@@ -1,14 +1,12 @@
 = Notes
 
-== What should be opened
+== On presentation what should be opened
 
 * sources of WildFly Quickstart helloword
 * sources of demo app 03-ejb-txn-demo/
 * source of s2i Dockerfile at s2i-runtime-image
 * project of WildFly Operator (CRD, run-minikube.sh
 * open tab of WildFly s2i (README)
-* 
-
 
 == Resouces
 
