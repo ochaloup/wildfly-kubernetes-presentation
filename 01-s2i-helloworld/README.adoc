@@ -12,6 +12,17 @@ s2i build -e GALLEON_PROVISION_DEFAULT_FAT_SERVER=true -e MAVEN_OPTS="-Dcom.redh
 The result is a fat image with repositories which are not necessary for runtime.
 It's time to use a chain build over runtime image.
 
+[NOTE]
+====
+The s2i docker image can be found at quay.io at `quay.io/wildfly/wildfly-centos7`
+The runtime s2i docker image can be fount at `quay.io/wildfly/wildfly-runtime-centos7`
+
+Then there is a WildFly docker image at `https://hub.docker.com/r/jboss/wildfly`.
+This WildFly image at hub.docker.com is not create with s2i script and is not to be integrated
+for Kubernetes deployment with WildFly Operator.
+
+====
+
 [code,bash]
 ----
 docker build --squash -t helloworld-wildfly-runtime-centos7 .
